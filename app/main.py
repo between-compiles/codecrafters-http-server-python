@@ -1,4 +1,3 @@
-from pathlib import PurePath
 import socket
 
 
@@ -30,8 +29,8 @@ def main():
                 resp = bytearray()
                 resp.extend(b"HTTP/1.1 200 OK\r\n")
                 resp.extend(b"Content-Type: text/plain\r\n")
-                # Get the final path component
-                body = f"{PurePath(path).name}\r\n\r\n".encode()
+                # Take everything after /echo/
+                body = f"{path.partition('/echo/')[2]}".encode()
                 resp.extend(f"Content-Length: {len(body)}\r\n\r\n".encode(encoding="utf-8"))
                 resp.extend(body)
                 client_socket.send(resp)
