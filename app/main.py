@@ -27,7 +27,7 @@ def main():
             for field in raw_http_request.split("\r\n"):
                 if ":" in field:
                     field_name, _, field_value = field.partition(":")
-                    header_fields[field_name] = field_value
+                    header_fields[field_name] = field_value.strip()
 
             # Handle the request
             if path == "/":
