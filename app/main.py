@@ -14,28 +14,43 @@ def main():
             client_data_buffer = client_socket.recv(4096)
 
             # Decode the bytes using UTF-8
-            raw_http_request = client_data_buffer.decode(encoding="utf-8")
+            raw_http_request = client_data_buffer.decode("utf-8")
             
             # The HTTP message start line is the first line in the HTTP request
-            http_msg_start_line = raw_http_request.split("\r\n")[0]
+            request_line = raw_http_request.split("\r\n")[0]
 
             # Get the path from the HTTP message start line
-            path = http_msg_start_line.split(" ")[1]
-            
+            path = request_line.split(" ")[1]
+
+            # Get the HTTP header fields
+            header_fields = {}
+            for field in raw_http_request.split("\r\n"):
+                if ":" in field:
+                    field_name, _, field_value = field.partition(":")
+                    header_fields[field_name] = field_value
+
             # Handle the request
             if path == "/":
-                client_socket.send(b"HTTP/1.1 200 OK\r\n\r\n")
+                client_socket.send("HTTP/1.1 200 OK\r\n\r\n".encode("ascii"))
             elif path.startswith("/echo/"):
                 resp = bytearray()
-                resp.extend(b"HTTP/1.1 200 OK\r\n")
-                resp.extend(b"Content-Type: text/plain\r\n")
+                resp.extend("HTTP/1.1 200 OK\r\n".encode("ascii"))
+                resp.extend("Content-Type: text/plain\r\n".encode("ascii"))
                 # Take everything after /echo/
-                body = f"{path.partition('/echo/')[2]}".encode()
-                resp.extend(f"Content-Length: {len(body)}\r\n\r\n".encode(encoding="utf-8"))
+                body = f"{path.partition('/echo/')[2]}".encode("utf-8")
+                resp.extend(f"Content-Length: {len(body)}\r\n\r\n".encode("ascii"))
+                resp.extend(body)
+                client_socket.send(resp)
+            elif path.startswith("/user-agent"):
+                resp = bytearray()
+                resp.extend("HTTP/1.1 200 OK\r\n".encode("ascii"))
+                resp.extend("Content-Type: text/plain\r\n".encode("ascii"))
+                body = f"{header_fields['User-Agent']}".encode("utf-8")
+                resp.extend(f"Content-Length: {len(body)}\r\n\r\n".encode("ascii"))
                 resp.extend(body)
                 client_socket.send(resp)
             else:
-                client_socket.send(b"HTTP/1.1 404 Not Found\r\n\r\n")
+                client_socket.send("HTTP/1.1 404 Not Found\r\n\r\n".encode("ascii"))
             client_socket.close()
 
 
