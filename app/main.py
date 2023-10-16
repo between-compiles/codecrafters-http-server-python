@@ -1,8 +1,11 @@
 from concurrent.futures import ThreadPoolExecutor
+import os
+from pathlib import PurePath
 import socket
+import sys
 
 
-def serve_client(client_socket: socket):
+def serve_client(client_socket: socket, directory: str):
     # Get the data (as bytes) from the client socket
     client_data_buffer = client_socket.recv(4096)
 
@@ -42,12 +45,30 @@ def serve_client(client_socket: socket):
         resp.extend(f"Content-Length: {len(body)}\r\n\r\n".encode("ascii"))
         resp.extend(body)
         client_socket.send(resp)
+    elif path.startswith("/files"):
+        file_name = f"{path.partition('/files/')[2]}"
+        read_path = PurePath(directory).joinpath(file_name)
+
+        if os.path.exists(read_path):
+            resp = bytearray()
+            resp.extend("HTTP/1.1 200 OK\r\n".encode("ascii"))
+            resp.extend("Content-Type: application/octet-stream\r\n".encode("ascii"))
+            with open(read_path, "r") as fout:
+                lines = fout.readlines()
+                body = f"{' '.join(lines)}".encode("utf-8")
+                resp.extend(f"Content-Length: {len(body)}\r\n\r\n".encode("ascii"))
+                resp.extend(body)
+                client_socket.send(resp)
+        else:
+            client_socket.send("HTTP/1.1 404 Not Found\r\n\r\n".encode("ascii"))
     else:
         client_socket.send("HTTP/1.1 404 Not Found\r\n\r\n".encode("ascii"))
     client_socket.close()
 
 
-def main():
+def main(args: list[str]):
+    directory = args[2] if "--directory" in args else None
+
     # Create a thread pool of worker threads to handle client connections 
     with ThreadPoolExecutor() as executor:
         # Create a TCP socket bound to local host
@@ -58,12 +79,11 @@ def main():
             while True:
                 # Wait for the client connection
                 client_socket, _ = server_socket.accept()
-                executor.submit(serve_client, client_socket)
-
+                executor.submit(serve_client, client_socket, directory)
 
 
 if __name__ == "__main__":
     try:
-        main()
+        sys.exit(main(sys.argv))
     except KeyboardInterrupt:
         print("Goodbye!")
