@@ -38,20 +38,7 @@ class Router:
 
     def dispatch(self, http_request: HttpRequest) -> HttpResponse:
         # This router only uses part of the path to resolve the route
-        # head, tail = os.path.split(http_request.request_target)
-
         route = "".join(pathlib.Path(http_request.request_target).parts[:2])
-
-        # print(head)
-        # print(tail)
-        
-        # route = head
-        # if head == "/" and tail:
-        #     route = head + tail
-        
-        # # Ensure we just have the first path component
-        # if route != "/":
-        #     route = os.path.dirname(route)
 
         handler = self.route_table.get(http_request.http_method + route)
         return handler(http_request) if handler else HttpResponse(http.HTTPStatus.NOT_FOUND)
