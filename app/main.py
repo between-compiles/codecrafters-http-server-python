@@ -43,6 +43,9 @@ class Router:
         route = head
         if head == "/" and tail:
             route = head + tail
+        
+        # Ensure we just have the 
+        route = os.path.dirname(route)
 
         handler = self.route_table.get(http_request.http_method + route)
         return handler(http_request) if handler else HttpResponse(http.HTTPStatus.NOT_FOUND)
