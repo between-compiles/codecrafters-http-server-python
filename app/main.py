@@ -156,11 +156,13 @@ def serialize(resp: HttpResponse) -> bytearray:
     """Serialize the HTTP response message for transport."""
     start_line = f"HTTP/1.1 {resp.http_status.value} " \
         f"{resp.http_status.phrase}\r\n\r\n".encode("ascii")
-    
+        
     data = bytearray()
     data.extend(start_line)
     
     if resp.body:
+        # Remove the last \r\n as the HTTP message does not end here
+        data = data[:-2]
         data.extend(f"Content-Type: {resp.content_type}\r\n".encode("ascii"))
         data.extend(f"Content-Length: {len(resp.body)}\r\n\r\n".encode("ascii"))
         data.extend(resp.body.encode("utf-8"))
